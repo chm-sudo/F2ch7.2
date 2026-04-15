@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>邏輯獵手 Ver2：再論包裝</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Noto+Sans+TC:wght@400;700&display=swap');
+        html, body { height: 100%; margin: 0; background-color: #fdf6ec; font-family: 'Noto Sans TC', sans-serif; transition: all 0.5s ease; }
+        .game-container { display: flex; flex-direction: column; height: 100vh; padding: 10px; box-sizing: border-box; }
+        .main-content { display: flex; flex: 1; gap: 15px; overflow: hidden; margin-top: 10px; }
+        .left-panel { flex: 1.2; display: flex; flex-direction: column; position: relative; background: white; border-radius: 15px; border: 1px solid #ddd; overflow: hidden; }
+        .right-panel { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        .selectable-text { padding: 20px; line-height: 2 !important; font-size: 1.2rem; transition: opacity 0.5s ease; }
+        .paragraph { margin-bottom: 1.5rem; transition: all 0.5s ease; }
+        .faded { opacity: 0.25; filter: blur(0.5px); }
+        .hidden-p { display: none; }
+        
+        #verify-btn { 
+            position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
+            width: 90px; height: 90px; background: #d97706; color: white;
+            border-radius: 50%; border: 4px solid white; box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            z-index: 1000; font-weight: 900; display: flex; align-items: center; justify-content: center; flex-direction: column;
+            cursor: pointer; user-select: none; -webkit-user-select: none;
+        }
+        #verify-btn:active { background: #b45309; transform: translateX(-50%) scale(0.95); }
+        
+        .cardboard-panel { background-color: #f5e6d3; border: 2px solid #d4b483; border-radius: 15px; padding: 12px; display: flex; flex-direction: column; }
+        .drop-slot { display: inline-flex; border: 2px solid #d97706; padding: 2px 8px; margin: 2px; border-radius: 6px; background: white; color: #b45309; font-weight: bold; cursor: pointer; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 11000; backdrop-filter: blur(4px); }
+        #mc-popover { position: fixed; display: none; background: white; border: 2px solid #d97706; border-radius: 10px; z-index: 10000; flex-direction: column; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        
+        .synthesis-point {
+            margin-top: 25px !important; margin-bottom: 10px !important;
+            padding-top: 15px; border-top: 2px dashed #d97706;
+        }
+
+        /* 典故圖卡樣式 */
+        .allusion-card {
+            background: linear-gradient(135deg, #fff 0%, #f3f4f6 100%);
+            border: 3px double #d97706; border-radius: 15px; padding: 15px;
+            margin: 10px 0; text-align: center; animation: slideIn 0.5s ease;
+        }
+        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div id="mc-popover"></div>
+    <div class="game-container">
+        <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow border-b-4 border-amber-600">
+            <h1 class="font-black text-amber-900 text-lg">邏輯獵手 Ver2</h1>
+            <div class="flex gap-4 font-bold text-sm">
+                <span>錯誤：<span id="fail-counter" class="text-red-600">0</span></span>
+                <span>進度：<span id="progress-val">1 / 10</span></span>
+            </div>
+        </div>
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="overflow-y-auto flex-1 p-4">
+                    <div id="text-canvas" class="selectable-text font-serif"></div>
+                    <div style="height: 120px;"></div>
+                </div>
+                <button id="verify-btn" onpointerdown="event.preventDefault(); checkCurrentAction();"><span>✔️</span><span>驗證</span></button>
+            </div>
+            <div class="right-panel">
+                <div class="cardboard-panel flex-1 overflow-hidden">
+                    <div class="bg-white/90 p-3 rounded-lg flex-1 flex flex-col overflow-hidden">
+                        <span id="task-stage" class="bg-amber-100 text-amber-800 px-2 py-1 rounded text-xs font-bold w-fit">任務載入中</span>
+                        <p id="task-desc" class="font-black text-stone-900 mt-2 text-base"></p>
+                        
+                        <div id="interactive-area" class="flex-1 overflow-y-auto border-t pt-2 mt-2">
+                            <div id="visual-cue"></div>
+                            <div id="cloze-area" class="hidden bg-amber-50 p-3 rounded-lg mb-2">
+                                <div id="cloze-sentence" class="font-bold text-stone-800 text-sm"></div>
+                            </div>
+                            <div id="target-points"></div>
+                        </div>
+                    </div>
+                    <div id="feedback-area" class="text-center h-8 text-sm font-bold mt-1"></div>
+                    <button id="main-action-btn" class="w-full py-3 mt-2 rounded-xl font-black bg-stone-300 text-stone-500" disabled>等待搜集</button>
+                </div>
+                <div class="bg-amber-50/50 border-2 border-dashed border-amber-200 rounded-xl p-2 flex-0.3 overflow-y-auto text-xs">
+                    <h3 class="text-center font-bold text-amber-800 mb-1">📥 證據紀錄</h3>
+                    <div id="evidence-basket-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="name-modal" class="modal-overlay">
+        <div class="bg-white p-6 rounded-2xl w-80 text-center shadow-2xl">
+            <h2 class="font-black mb-4 text-xl text-amber-900">邏輯鏈條完成！</h2>
+            <input type="text" id="user-class" placeholder="班別" class="w-full p-2 mb-2 border rounded font-bold">
+            <input type="number" id="user-num" placeholder="班號" class="w-full p-2 mb-2 border rounded font-bold">
+            <input type="text" id="user-name" placeholder="姓名" class="w-full p-2 mb-4 border rounded font-bold">
+            <button id="final-submit-btn" class="w-full py-3 bg-amber-600 text-white rounded-lg font-bold">生成證書</button>
+        </div>
+    </div>
+
+    <div id="finish-screen" class="modal-overlay">
+        <div class="bg-white p-6 rounded-3xl max-w-2xl w-full mx-4 text-center border-8 border-amber-600 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <h2 class="text-2xl font-black text-amber-900 mb-4 italic">榮譽證書</h2>
+            <p class="font-bold mb-4 text-lg"><span id="display-class"></span> 班 <span id="display-num"></span> 號 <span id="display-name"></span> 同學</p>
+            <div id="final-summary" class="text-left bg-stone-50 p-4 rounded-xl text-sm leading-relaxed border space-y-4"></div>
+            <button onclick="location.reload()" class="mt-6 font-bold text-stone-400 underline">重新挑戰</button>
+        </div>
+    </div>
+
+    <script>
+        const articleText = [
+            "❶ 我在這裡寫的「值得擔憂」，不限於中國，而是全世界。",
+            "❷ 我曾在本刊上寫過一篇《論包裝》的文章，內容主要是談外面包裝極大而裡面的商品極小的問題。現在這一篇《再論包裝》，主要談的是外面包裝和裡面商品價值的問題。重點有所不同，而令人擔憂則一也。我先舉一個小例子。",
+            "❸ 最近有友人從山東歸來，帶給我一些周村燒餅，是當地生產的一種點心。作料異常簡單，不過一點麵粉、芝麻，再加上一點糖或鹽，用水和好，擀成薄皮，做成圓餅，放在爐中烤乾，即為成品，香脆可口，遠近聞名，大概有幾百年的歷史了。因為成本極低，所以價錢不高。過去只是十個或八九個一摞，用白紙一包，即可出售。燒餅吃完，把紙一揉，變成垃圾，佔地也不多。",
+            "❹ 常言道：「士別三日，當刮目相看。」豈知這一句話也能應用到周村燒餅身上。現在友人送給我的這些燒餅，完全換了新裝，不是白紙，而是鐵盒，彩繪燙金，光彩奪目。夥頤！我的老朋友闊起來了！我不禁大為驚詫。",
+            "❺ 在驚詫之餘，我又不禁憂心忡忡起來。我不是經濟學家，這裡也用不著經濟學。只草草地估算一下，那幾個燒餅能值幾個錢？這金碧輝煌的鐵盒值多少錢？顯然後者比前者要貴得多。可是哪一個有使用價值呢？又顯然是前者。燒餅吃下去，可以充飢，可以轉變成營養成分，增強人的身體。鐵盒，如果只有一、兩個的話，小孩可以拿著玩一玩。如果是成千上萬的話，卻只能變成垃圾，遭人遺棄。《論包裝》中提到的那一些大而無當的包裝，把其中小小的一點商品取出來後，也都成為垃圾。",
+            "❻ 這有點像中國古書上的一個典故：「買櫝還珠。」但是，這個典故不過是譏笑捨本逐末，取捨不當而已，那個櫝還是有用的，決不會變成垃圾。古代人生活簡樸，沒有多少垃圾，也決不會自己製造垃圾。到了今天，人類大大地進步了。卻愈來愈蠢了，會自己製造垃圾，以致垃圾成為一個世界性問題。每一個國家的政府都為處理垃圾而大傷腦筋，至今還沒能找到一個行之有效的辦法。如此持續下去，將來人類只能在垃圾堆裏討生活了。",
+            "❼ 但是，還有更嚴重的問題。人類衣、食、住、行的資料都取之於大自然。但是，小小的一個地球村裏資源畢竟是有限的。當年蘇東坡說：「惟江上之清風，與山間之明月，耳得之而為聲，目遇之而成色，取之無禁，用之不竭，是造物之無盡藏也。」東坡認為造物無盡藏，是不正確的。造物是有盡藏的，用之是有竭的。可惜到了今天，世人還多是渾渾噩噩，懵渾不懂，毫無反思悔改之意。尤其是那一個以世界警察自居的大國，在使用大自然資源方面，肆無忌憚地浪費，真不禁令人髮指。有識之士已經感覺到，人類已經是「盲人騎瞎馬，夜半臨深池」，但感覺到這種危險者不多。這是事實，並不是我一個人的杞憂。",
+            "❽ 我希望有聰明智慧的中國人，懸崖勒馬，改弦更張，再也不製造那一種大而無當的商品包裝和那種金碧輝煌的商品鐵盒，給我們的子孫後代多留下一點大自然的資源。"
+        ];
+
+        // 核心關卡流程
+        const gameFlow = [
+            { 
+                step: 1, 
+                visibleP: [2, 3, 4], // 顯示第三至五段
+                evidences: [
+                    { q: "1. 找出第一個論據出現的段落（周村燒餅）", keywords: ["最近有友人從山東歸來", "帶給我一些周村燒餅"], label: "燒餅例子" },
+                    { q: "2. 找出：周村燒餅原本的包裝方法", keywords: ["過去只是十個或八九個一摞，用白紙一包"], label: "舊有包裝" },
+                    { q: "3. 找出：現今周村燒餅的包裝", keywords: ["鐵盒，彩繪燙金，光彩奪目"], label: "新裝" },
+                    { q: "4. 找出：商品價值與包裝成本的對比", keywords: ["後者比前者要貴得多"], label: "價值倒置" }
+                ],
+                cloze: "分論一：現代商品{過度包裝}，其成本{遠高於}商品實際價值，造成{浪費}。",
+                mcOptions: { "過度包裝": ["簡單包裝", "過度包裝"], "遠高於": ["遠低於", "遠高於"], "浪費": ["節約", "浪費"] },
+                synthesis: "分論一：現代商品過度包裝，其成本遠高於商品實際價值，造成浪費。"
+            },
+            {
+                step: 2,
+                visibleP: [0, 1, 2, 3, 4, 5, 6, 7], // 全部出現
+                fadedP: [2, 3, 4], // 段落3-5改淺色
+                evidences: [
+                    { q: "5. 找出第二個論據：買櫝還珠 (提示：忽略已讀段落)", keywords: ["買櫝還珠"], label: "典故引用" }
+                ],
+                // 這裡需要特殊處理的觀點選擇題目 (Step 7)
+                customTask: "allusionPoint", 
+                synthesis: "分論二：今人過度包裝製造垃圾，最後演變成全球性問題。"
+            },
+            {
+                step: 3,
+                fadedP: [2, 3, 4, 5], // 前六段都淡化
+                evidences: [
+                    { q: "6. 找出第三個論據：引用名言", keywords: ["惟江上之清風", "與山間之明月", "取之無禁", "用之不竭"], label: "蘇氏名言" },
+                    { q: "7. 找出文言解釋：", keywords: ["東坡認為造物無盡藏"], label: "文言解釋" },
+                    { q: "8. 找出作者對此看法的評論：", keywords: ["是不正確的"], label: "作者看法" },
+                    { q: "9. 作者引用此名言，藉此說明什麼觀點？", keywords: ["資源畢竟是有限的"], label: "資源性質" }
+                ],
+                cloze: "分論三：自然資源並非{不竭}。人類若繼續浪費，資源終會{耗盡}。",
+                mcOptions: { "不竭": ["有限", "不竭"], "耗盡": ["再生", "耗盡"] },
+                synthesis: "分論三：自然資源並非「不竭」與「無盡藏」的。"
+            },
+            {
+                step: 4,
+                fadedP: [2, 3, 4, 5],
+                evidences: [
+                    { q: "10. 找出第四個論據：引用書中句子", keywords: ["盲人騎瞎馬", "夜半臨深池"], label: "末日預警" },
+                    { q: "11. 接著看，作者想說明什麼觀點？", keywords: ["感覺到這種危險者不多"], label: "預警觀點" }
+                ],
+                cloze: "中心論點：商品過度包裝的問題{值得擔憂}。我們應{不再製造大而無當的包裝}。",
+                mcOptions: { "值得擔憂": ["值得擔憂", "微不足道"], "不再製造大而無當的包裝": ["加強包裝", "不再製造大而無當的包裝"] },
+                synthesis: "中心論點：商品過度包裝的問題。"
+            }
+        ];
+
+        let currentIdx = 0, collectedIdx = 0, totalFail = 0;
+        const clean = (s) => s.replace(/[\s\r\n\t\(\)\d\.,，。：「」『』!！?？❶-❽]/g, "");
+
+        function initArticle() {
+            const canvas = document.getElementById('text-canvas');
+            canvas.innerHTML = articleText.map((t, i) => `<div id="p-${i}" class="paragraph">${t}</div>`).join('');
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            const flow = gameFlow[currentIdx];
+            articleText.forEach((_, i) => {
+                const p = document.getElementById(`p-${i}`);
+                p.classList.remove('faded', 'hidden-p');
+                if (flow.visibleP && !flow.visibleP.includes(i)) p.classList.add('hidden-p');
+                if (flow.fadedP && flow.fadedP.includes(i)) p.classList.add('faded');
+            });
+            updateTaskUI();
+        }
+
+        function updateTaskUI() {
+            const flow = gameFlow[currentIdx];
+            document.getElementById('progress-val').innerText = `${currentIdx + 1} / 4`;
+            const btn = document.getElementById('main-action-btn');
+            
+            if (collectedIdx < flow.evidences.length) {
+                document.getElementById('task-stage').innerText = `搜集證據 (${collectedIdx}/${flow.evidences.length})`;
+                document.getElementById('task-desc').innerText = flow.evidences[collectedIdx].q;
+                btn.disabled = true; btn.className = "w-full py-3 mt-2 rounded-xl bg-stone-300 text-stone-500 font-bold";
+            } else {
+                document.getElementById('task-stage').innerText = "證據齊全";
+                document.getElementById('task-desc').innerText = "點擊進行邏輯合成";
+                btn.disabled = false; btn.className = "w-full py-3 mt-2 rounded-xl bg-amber-600 text-white shadow-lg cursor-pointer font-bold";
+                btn.onclick = () => (flow.customTask ? runCustomTask(flow.customTask) : startCloze());
+            }
+        }
+
+        function checkCurrentAction() {
+            const sel = window.getSelection().toString().trim();
+            if (!sel || sel.length < 2) return showFeedback("⚠️ 請先選取文字內容", "text-red-500");
+            
+            const target = gameFlow[currentIdx].evidences[collectedIdx];
+            const isCorrect = target.keywords.some(k => {
+                const ck = clean(k), cs = clean(sel);
+                return (cs.includes(ck) || ck.includes(cs)) && Math.abs(cs.length - ck.length) <= 8;
+            });
+
+            if (isCorrect) {
+                addToBasket(target.label, sel);
+                collectedIdx++;
+                showFeedback("✓ 成功捕獲證據！", "text-green-600");
+                window.getSelection().removeAllRanges();
+                if (currentIdx === 1 && collectedIdx === 1) { // 找到買櫝還珠
+                    showAllusionCard();
+                }
+                updateTaskUI();
+            } else {
+                totalFail++;
+                document.getElementById('fail-counter').innerText = totalFail;
+                showFeedback("✗ 選取不夠精準", "text-red-500");
+            }
+        }
+
+        function showAllusionCard() {
+            const cue = document.getElementById('visual-cue');
+            cue.innerHTML = `
+                <div class="allusion-card">
+                    <div class="text-3xl mb-2">🎁 ✨ 🐚</div>
+                    <div class="font-bold text-amber-800">【買櫝還珠】典故圖</div>
+                    <div class="text-[10px] text-stone-500 mt-1">諷刺捨本逐末：華麗的盒子(櫝) vs 珍貴的珍珠</div>
+                </div>
+            `;
+        }
+
+        function runCustomTask(type) {
+            if (type === "allusionPoint") {
+                const area = document.getElementById('cloze-area');
+                area.classList.remove('hidden');
+                document.getElementById('task-desc').innerText = "選取作者想說明的觀點：";
+                document.getElementById('cloze-sentence').innerHTML = `
+                    <div class="text-xs space-y-2">
+                        <p>作者引用「買櫝還珠」是為了說明什麼觀點？</p>
+                        <div class="p-2 border rounded bg-white cursor-pointer hover:bg-amber-100" onclick="checkAllusionOption(1)">A. 那個櫝還是有用的，絕不會變成垃圾。</div>
+                        <div class="p-2 border rounded bg-white cursor-pointer hover:bg-amber-100" onclick="checkAllusionOption(2)">B. 那個櫝還是有用的...決不會自己製造垃圾。</div>
+                        <div class="p-2 border rounded bg-white cursor-pointer hover:bg-amber-100" onclick="checkAllusionOption(3)">C. 那個櫝還是有用的，絕不會變成垃圾...以致垃圾成爲一個世界性問題。</div>
+                    </div>
+                `;
+                document.getElementById('main-action-btn').style.display = 'none';
+            }
+        }
+
+        function checkAllusionOption(opt) {
+            if (opt === 1) showFeedback("💡 提醒：為什麼要帶出「不會變成垃圾」？", "text-amber-600");
+            else if (opt === 2) showFeedback("💡 提醒：文章重點是在古代的情況嗎？", "text-amber-600");
+            else {
+                showFeedback("✓ 正確！連同垃圾問題一併指出了。", "text-green-600");
+                document.getElementById('visual-cue').innerHTML += `<div class="p-2 bg-amber-100 rounded mt-2 text-xs font-bold">作者以典故諷刺現代人會為自己製造垃圾。</div>`;
+                setTimeout(() => {
+                    document.getElementById('cloze-area').classList.add('hidden');
+                    document.getElementById('main-action-btn').style.display = 'block';
+                    startCloze(true); // 進入買櫝還珠的填空
+                }, 1500);
+            }
+        }
+
+        function startCloze(isSpecial = false) {
+            document.getElementById('cloze-area').classList.remove('hidden');
+            const flow = gameFlow[currentIdx];
+            
+            // 如果是買櫝還珠的整合題 (要求9)
+            if (currentIdx === 1) {
+                document.getElementById('cloze-sentence').innerHTML = `
+                    作者以“買櫝還珠”的{成語}典故，{諷刺}現代人比古代人{愚蠢}，因爲現代人會{為自己製造垃圾}。
+                `.replace(/\{(.+?)\}/g, (m, p) => `<span class="drop-slot" data-answer="${p}" onclick="showMC(this, event)">點擊選擇</span>`);
+                const mc = { "成語": ["歷史", "成語"], "諷刺": ["讚揚", "諷刺"], "愚蠢": ["聰明", "愚蠢"], "為自己製造垃圾": ["追求美麗", "為自己製造垃圾"] };
+                flow.mcOptions = mc;
+            } else {
+                document.getElementById('cloze-sentence').innerHTML = flow.cloze.replace(/\{(.+?)\}/g, (m, p) => `<span class="drop-slot" data-answer="${p}" onclick="showMC(this, event)">點擊選擇</span>`);
+            }
+            
+            const btn = document.getElementById('main-action-btn');
+            btn.innerText = "驗證邏輯合成";
+            btn.onclick = verifyCloze;
+        }
+
+        function verifyCloze() {
+            const slots = document.querySelectorAll('.drop-slot');
+            if (Array.from(slots).every(s => s.innerText === s.dataset.answer)) {
+                const f = document.createElement('div'); 
+                f.className = "p-2 bg-white border border-amber-600 text-amber-900 rounded font-bold text-[10px] synthesis-point";
+                f.innerText = "📍 " + gameFlow[currentIdx].synthesis;
+                document.getElementById('target-points').appendChild(f);
+                
+                currentIdx++; collectedIdx = 0;
+                document.getElementById('cloze-area').classList.add('hidden');
+                document.getElementById('visual-cue').innerHTML = '';
+                
+                if (currentIdx < gameFlow.length) { 
+                    updateDisplay(); 
+                    document.getElementById('main-action-btn').innerText = "等待搜集"; 
+                }
+                else { showFinal(); }
+            } else { 
+                totalFail++; 
+                document.getElementById('fail-counter').innerText = totalFail;
+                showFeedback("✗ 邏輯推理有誤", "text-red-500"); 
+            }
+        }
+
+        function showFinal() {
+            const summary = document.getElementById('final-summary');
+            summary.innerHTML = `
+                <p class="font-black text-center text-amber-800 border-b pb-2 text-lg">📝 《再論包裝》邏輯結構圖 (Ver2)</p>
+                <div><b>● 中心論點：</b>商品過度包裝的問題</div>
+                
+                <div class="bg-amber-50 p-2 rounded">
+                    <b>● 分論一：</b>現代商品過度包裝，其成本遠高於商品實際價值，造成浪費。
+                    <div class="pl-4 text-stone-600 text-[11px] italic">論據：舉出現今周村燒餅以彩繪燙金的鐵盒包裝作例子、包裝（鐵盒）的成本比商品價值高昂。</div>
+                </div>
+
+                <div class="bg-amber-50 p-2 rounded">
+                    <b>● 分論二：</b>今人過度包裝製造垃圾，最後演變成全球性問題。
+                    <div class="pl-4 text-stone-700 text-[11px] font-bold">加強：作者以“買櫝還珠”的成語典故，諷刺現代人比古代人愚蠢，因為現代人會為自己製造垃圾。</div>
+                    <div class="pl-4 text-stone-600 text-[11px] italic">論據：古代人生活簡樸，沒有多少垃圾；現代人製造過多垃圾，各國政府大傷腦筋。</div>
+                </div>
+
+                <div class="bg-amber-50 p-2 rounded">
+                    <b>● 分論三：</b>指出自然資源並非「不竭」與「無盡藏」的，若人類繼續浪費，自然資源終有一天會耗盡。
+                    <div class="pl-4 text-stone-700 text-[11px] font-bold">加強：作者以蘇東坡的名言，表示古人認為資源是用之不竭的，以突出「造物是有盡藏得，用之有竭的」。</div>
+                    <div class="pl-4 text-stone-700 text-[11px] font-bold">加強：作者引用《世說新語》「盲人騎瞎馬」句，諷刺部分人未能感覺地球資源正逐漸消耗的危機。</div>
+                </div>
+
+                <p class="font-black text-amber-700 mt-4 text-center text-base">結論：聰明的中國人應該懸崖勒馬、改弦更張，給子孫多留一點資源。</p>
+            `;
+            document.getElementById('name-modal').style.display = 'flex';
+        }
+
+        // 基本組件
+        function addToBasket(label, text) {
+            const d = document.createElement('div');
+            d.className = "bg-white p-1 mb-1 border-l-2 border-amber-600 pl-2 shadow-sm animate-pulse";
+            d.innerHTML = `<b>【${label}】</b> ${text.substring(0,20)}...`;
+            document.getElementById('evidence-basket-content').prepend(d);
+        }
+        function showFeedback(m, c) { const el = document.getElementById('feedback-area'); el.innerText = m; el.className = "text-center h-8 text-sm font-bold mt-1 " + c; }
+        function showMC(slot, e) {
+            e.stopPropagation(); const pop = document.getElementById('mc-popover'); pop.innerHTML = '';
+            gameFlow[currentIdx].mcOptions[slot.dataset.answer].forEach(opt => {
+                const d = document.createElement('div'); d.className = "p-3 border-b cursor-pointer font-bold hover:bg-amber-100 text-sm";
+                d.innerText = opt; d.onclick = (ev) => { ev.stopPropagation(); slot.innerText = opt; pop.style.display = 'none'; };
+                pop.appendChild(d);
+            });
+            const r = slot.getBoundingClientRect(); pop.style.display = 'flex'; pop.style.top = (r.bottom + window.scrollY + 5) + "px"; pop.style.left = r.left + "px";
+        }
+        window.onclick = () => document.getElementById('mc-popover').style.display = 'none';
+        window.onload = () => {
+            initArticle();
+            document.getElementById('final-submit-btn').onclick = () => {
+                const name = document.getElementById('user-name').value;
+                if(!name) return alert("請填寫姓名");
+                document.getElementById('display-class').innerText = document.getElementById('user-class').value;
+                document.getElementById('display-num').innerText = document.getElementById('user-num').value;
+                document.getElementById('display-name').innerText = name;
+                document.getElementById('name-modal').style.display = 'none'; 
+                document.getElementById('finish-screen').style.display = 'flex';
+            };
+        };
+    </script>
+</body>
+</html>
