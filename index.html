@@ -59,14 +59,6 @@
         /* 段落按鈕樣式 */
         .p-btn { transition: all 0.2s ease; user-select: none; -webkit-user-select: none; }
         .p-btn.selected { background-color: #d97706 !important; color: white !important; border-color: #92400e !important; }
-
-        /* 典故圖卡樣式 */
-        .allusion-card {
-            background: linear-gradient(135deg, #fff 0%, #f3f4f6 100%);
-            border: 3px double #d97706; border-radius: 10px; padding: 12px;
-            margin: 10px 0; text-align: center; animation: slideIn 0.5s ease;
-        }
-        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
 </head>
 <body>
@@ -108,9 +100,6 @@
                                 <div class="grid grid-cols-4 gap-2" id="p-btn-container"></div>
                             </div>
                             
-                            <!-- 視覺提示區 (圖卡) -->
-                            <div id="visual-cue"></div>
-                            
                             <!-- 填空合成區 -->
                             <div id="cloze-area" class="hidden bg-amber-50 p-3 rounded-lg mb-2 mt-2">
                                 <div id="cloze-sentence" class="font-bold text-stone-800 text-sm leading-relaxed"></div>
@@ -127,6 +116,27 @@
                     <div id="evidence-basket-content"></div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- 填寫姓名領證書介面 -->
+    <div id="name-modal" class="modal-overlay">
+        <div class="bg-white p-6 rounded-2xl w-80 text-center shadow-2xl">
+            <h2 class="font-black mb-4 text-xl text-amber-900">全部任務完成！</h2>
+            <input type="text" id="user-class" placeholder="班別" class="w-full p-2 mb-2 border rounded font-bold">
+            <input type="number" id="user-num" placeholder="班號" class="w-full p-2 mb-2 border rounded font-bold">
+            <input type="text" id="user-name" placeholder="姓名" class="w-full p-2 mb-4 border rounded font-bold">
+            <button id="final-submit-btn" onclick="submitAndFinish()" class="w-full py-3 bg-amber-600 text-white rounded-lg font-bold shadow-lg">生成榮譽證書</button>
+        </div>
+    </div>
+
+    <!-- 終極總結證書畫面 -->
+    <div id="finish-screen" class="modal-overlay">
+        <div class="bg-white p-6 rounded-3xl max-w-2xl w-full mx-4 text-center border-8 border-amber-600 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <h2 class="text-2xl font-black text-amber-900 mb-4 italic">榮譽證書</h2>
+            <p class="font-bold mb-4 text-lg"><span id="display-class"></span> 班 <span id="display-num"></span> 號 <span id="display-name"></span> 同學</p>
+            <div id="final-summary" class="text-left bg-stone-50 p-4 rounded-xl text-sm leading-relaxed border"></div>
+            <button onclick="location.reload()" class="mt-6 font-bold text-stone-400 underline hover:text-amber-600">重新挑戰</button>
         </div>
     </div>
 
@@ -157,9 +167,9 @@
                 ],
                 cloze: "分論一：現代商品{過度包裝}，其成本{遠高於}商品實際價值，造成{浪費}。",
                 mcOptions: { 
-                    "過度包裝": ["過度包裝", "簡單包裝", "沒有包裝"], 
-                    "遠高於": ["等同於", "遠低於", "遠高於"], 
-                    "浪費": ["美觀", "浪費", "節約"] 
+                    "過度包裝": ["簡單包裝", "沒有包裝", "過度包裝"], 
+                    "遠高於": ["等同於", "遠高於", "遠低於"], 
+                    "浪費": ["浪費", "美觀", "節約"] 
                 },
                 synthesis: "分論一：現代商品過度包裝，其成本遠高於商品實際價值，造成浪費。"
             },
@@ -172,22 +182,59 @@
                     { q: "5. 找出第二個論據", keywords: ["買櫝還珠"], label: "典故引用", hint: "這是一個引用" },
                     { 
                         q: "6. 讓學生選取作者引用買櫝還珠想說明什麼觀點？", 
-                        keywords: [], // 使用客製化邏輯處理
+                        keywords: [], 
                         label: "引用觀點",
                         customLogic: "allusion_point",
-                        helpText: "櫝代表什麼？買櫝還珠是發生在什麼時候？文章的重點是說何時的包裝問題？答案很長的哦~大膽選擇就可以"
+                        helpText: "櫝代表什麽？買櫝還珠是發生在什麽時候？文章的重點是說何時的包裝問題？答案很長的哦~大膽選擇就可以"
                     },
                     { q: "7. 找出：古代的垃圾情況", keywords: ["沒有多少垃圾，也決不會自己製造垃圾"], label: "古代情況" },
                     { q: "8. 找出：現代處理垃圾的情況", keywords: ["每一個國家的政府都為處理垃圾而大傷腦筋"], label: "現代危機" }
                 ],
                 cloze: "作者以「買櫝還珠」的{成語}典故，{諷刺}現代人比古代人{愚蠢}，因為現代人會{為自己製造垃圾}。",
                 mcOptions: { 
-                    "成語": ["歷史", "故事", "成語"], 
-                    "諷刺": ["讚揚", "諷刺", "批評"], 
-                    "愚蠢": ["聰明", "進步", "愚蠢"], 
-                    "為自己製造垃圾": ["為自己製造垃圾", "追求美麗", "保護環境"] 
+                    "成語": ["成語", "歷史", "故事"], 
+                    "諷刺": ["讚揚", "批評", "諷刺"], 
+                    "愚蠢": ["聰明", "愚蠢", "進步"], 
+                    "為自己製造垃圾": ["追求美麗", "保護環境", "為自己製造垃圾"] 
                 },
                 synthesis: "分論二：今人過度包裝製造垃圾，最後演變成全球性問題。"
+            },
+            {
+                step: 3,
+                phases: {
+                    'evidence_collect': { visibleP: [0,1,2,3,4,5,6,7], fadedP: [2,3,4,5] }
+                },
+                evidences: [
+                    { q: "9. 找出第三個論據", keywords: ["惟江上之清風，與山間之明月，耳得之而為聲，目遇之而成色，取之無禁，用之不竭，是造物之無盡藏也"], label: "引用名言", hint: "引用" },
+                    { q: "10. 找出文言解釋", keywords: ["東坡認為造物無盡藏"], label: "文言解釋", hint: "尋找對東坡話語的總結" },
+                    { q: "11. 找出作者對此看法的評論", keywords: ["是不正確的"], label: "作者看法", hint: "作者覺得這個說法對嗎？" },
+                    { q: "12. 作者引用古人名言，藉此說明什麼觀點？", keywords: ["小小的一個地球村裏資源畢竟是有限的", "資源畢竟是有限的"], label: "資源觀點", hint: "尋找關於地球資源的描述" },
+                    { q: "13. 找出第四個論據", keywords: ["盲人騎瞎馬，夜半臨深池"], label: "引用名言", hint: "引用" },
+                    { q: "14. 作者引用書中的句子，藉此說明什麼觀點？", keywords: ["感覺到這種危險者不多"], label: "世人危機感", hint: "接著看" }
+                ],
+                cloze: "分論點：自然資源並非{不竭}，若人類繼續{浪費}，資源終會{耗盡}。",
+                mcOptions: { 
+                    "不竭": ["有限", "不竭", "再生"], 
+                    "浪費": ["浪費", "保護", "開採"], 
+                    "耗盡": ["增加", "再生", "耗盡"] 
+                },
+                synthesis: "分論三：指出自然資源並非「不竭」與「無盡藏」的，若人類繼續浪費，自然資源終有一天會耗盡。"
+            },
+            {
+                step: 4,
+                phases: {
+                    'evidence_collect': { visibleP: [0,1,2,3,4,5,6,7], fadedP: [2,3,4,5,6] }
+                },
+                evidences: [
+                    { q: "15. 找出：作者對中國人的具體建議", keywords: ["再也不製造那一種大而無當的商品包裝", "再也不製造那一種大而無當的商品包裝和那種金碧輝煌的商品鐵盒"], label: "具體建議", hint: "最後一段，改弦更張之後的行動" },
+                    { q: "16. 找出：全文開篇的核心感受", keywords: ["值得擔憂"], label: "核心論點", hint: "第一段" }
+                ],
+                cloze: "中心論點：過度包裝問題{值得擔憂}。我們應{不再製造大而無當的包裝}。",
+                mcOptions: { 
+                    "值得擔憂": ["值得慶幸", "值得擔憂", "微不足道"], 
+                    "不再製造大而無當的包裝": ["推廣鐵盒包裝", "加強商品包裝", "不再製造大而無當的包裝"] 
+                },
+                synthesis: "中心論點：商品過度包裝的問題。"
             }
         ];
 
@@ -245,7 +292,6 @@
         };
 
         window.handleMainVerify = function() {
-            // 每次點擊驗證，先隱藏錯誤提示框
             document.getElementById('hint-container').classList.add('hidden');
 
             if (currentPhase === 'paragraph_select') {
@@ -284,35 +330,36 @@
             if (target.customLogic === 'allusion_point') {
                 const cs = clean(sel);
                 
-                // Rule 1: 包含不當內容 (選到了譏笑捨本逐末)
                 if (cs.includes(clean("這個典故不過是譏笑捨本逐末，取捨不當而已"))) {
                     hintBox.innerHTML = "💡 <b>提醒：</b>文章重點在包裝，不是取捨哦";
                     hintBox.classList.remove('hidden');
                     totalFail++; document.getElementById('fail-counter').innerText = totalFail;
                     return;
                 } 
-                // Rule 2: 沒選到現代人的愚蠢行為
+                else if (!cs.includes(clean("那個櫝還是有用的")) || !cs.includes(clean("決不會變成垃圾"))) {
+                    hintBox.innerHTML = "💡 <b>提醒：</b>和 買櫝還珠有什麽關係";
+                    hintBox.classList.remove('hidden');
+                    totalFail++; document.getElementById('fail-counter').innerText = totalFail;
+                    return;
+                } 
+                else if (!cs.includes(clean("古代人生活簡樸")) || !cs.includes(clean("也決不會自己製造垃圾"))) {
+                    hintBox.innerHTML = "💡 <b>提醒：</b>爲甚麽要用古代的例子";
+                    hintBox.classList.remove('hidden');
+                    totalFail++; document.getElementById('fail-counter').innerText = totalFail;
+                    return;
+                }
                 else if (!cs.includes(clean("到了今天，人類大大地進步了。卻愈來愈蠢了，會自己製造垃圾"))) {
                     hintBox.innerHTML = "💡 <b>提醒：</b>文章是想要討論古代的包裝問題嗎？";
                     hintBox.classList.remove('hidden');
                     totalFail++; document.getElementById('fail-counter').innerText = totalFail;
                     return;
-                } 
-                // Rule 3: 沒選到櫝還是有用的或不會變成垃圾
-                else if (!cs.includes(clean("那個櫝還是有用的")) || !cs.includes(clean("決不會變成垃圾"))) {
-                    hintBox.innerHTML = "💡 <b>提醒：</b>和買櫝還珠有什麼關係";
-                    hintBox.classList.remove('hidden');
-                    totalFail++; document.getElementById('fail-counter').innerText = totalFail;
-                    return;
-                } 
-                // Rule 4: 確保選到結尾的世界性問題
+                }
                 else if (!cs.includes(clean("以致垃圾成為一個世界性問題"))) {
                     hintBox.innerHTML = "💡 <b>提醒：</b>請完整選取到這如何演變成世界性問題。";
                     hintBox.classList.remove('hidden');
                     totalFail++; document.getElementById('fail-counter').innerText = totalFail;
                     return;
                 }
-                // 完全正確條件
                 else {
                     isCorrect = true;
                 }
@@ -325,7 +372,6 @@
                 });
             }
 
-            // 判定正確後的行為
             if (isCorrect) {
                 const d = document.createElement('div'); 
                 d.className = "bg-white p-1 mb-1 border-l-2 border-amber-600 pl-2 shadow-sm rounded text-stone-700";
@@ -336,11 +382,6 @@
                 showFeedback("✓ 正確！", "text-green-600");
                 window.getSelection().removeAllRanges(); 
 
-                // 若為第二關且剛找到「買櫝還珠」，顯示圖卡
-                if (currentIdx === 1 && collectedIdx === 1) {
-                    showAllusionCard();
-                }
-
                 updateTaskUI();
             } else {
                 totalFail++; document.getElementById('fail-counter').innerText = totalFail;
@@ -350,16 +391,6 @@
                     hintBox.classList.remove('hidden');
                 }
             }
-        }
-
-        function showAllusionCard() {
-            document.getElementById('visual-cue').innerHTML = `
-                <div class="allusion-card">
-                    <div class="text-3xl mb-1">🎁 珠 🐚</div>
-                    <div class="font-bold text-amber-800">【買櫝還珠】</div>
-                    <div class="text-[10px] text-stone-500 mt-1">捨本逐末：買了華麗的盒子(櫝)，退還了珍貴的珍珠</div>
-                </div>
-            `;
         }
 
         window.showUltimateHint = function() {
@@ -376,7 +407,7 @@
             const btn = document.getElementById('main-action-btn');
             const helpBtnContainer = document.getElementById('help-btn-container');
             
-            helpBtnContainer.classList.add('hidden'); // 預設隱藏
+            helpBtnContainer.classList.add('hidden');
 
             if (currentPhase === 'paragraph_select') {
                 document.getElementById('task-stage').innerText = "段落定位";
@@ -454,16 +485,16 @@
                 
                 currentIdx++; collectedIdx = 0;
                 document.getElementById('cloze-area').classList.add('hidden'); 
-                document.getElementById('visual-cue').innerHTML = ''; // 清除典故圖片
                 
                 if (currentIdx < gameFlow.length) {
                     currentPhase = gameFlow[currentIdx].paragraphTask ? 'paragraph_select' : 'evidence_collect';
                     updateDisplay();
                 } else {
-                    showFeedback("✅ 第二階段測試完成！", "text-green-600");
+                    showFeedback("✅ 所有任務測試完成！", "text-green-600");
                     document.getElementById('task-stage').innerText = "階段完成";
-                    document.getElementById('task-desc').innerText = "等待後續代碼載入...";
+                    document.getElementById('task-desc').innerText = "請填寫資料領取證書...";
                     document.getElementById('main-action-btn').style.display = 'none';
+                    document.getElementById('name-modal').style.display = 'flex';
                 }
 
             } else { 
@@ -471,6 +502,30 @@
                 document.getElementById('fail-counter').innerText = totalFail;
                 showFeedback("✗ 邏輯推理錯誤", "text-red-500"); 
             }
+        }
+
+        function submitAndFinish() {
+            const uClass = document.getElementById('user-class').value;
+            const uNum = document.getElementById('user-num').value;
+            const uName = document.getElementById('user-name').value;
+            if (!uClass || !uNum || !uName) { alert("請完整填寫班別、班號與姓名！"); return; }
+            
+            document.getElementById('display-class').innerText = uClass;
+            document.getElementById('display-num').innerText = uNum;
+            document.getElementById('display-name').innerText = uName;
+            
+            document.getElementById('name-modal').style.display = 'none';
+            document.getElementById('finish-screen').style.display = 'flex';
+            
+            // 嚴格寫入指定之總結文本
+            document.getElementById('final-summary').innerHTML = `
+                <p class="font-black text-center text-amber-800 border-b pb-2 mb-3 text-lg">📝 《再論包裝》結構總結</p>
+                <div class="mb-3"><b>● 中心論點：</b>商品過度包裝的問題</div>
+                <div class="mb-3"><b>● 分論一：</b>現代商品過度包裝，商品的包裝成本遠高於商品實際價值，造成浪費。<br><span class="pl-4 text-stone-600 text-xs italic block mt-1">論據：舉出現今周村燒餅以彩繪燙金的鐵盒包裝作例子、商品（燒餅）本身的價值不高，但包裝（鐵盒）的成本卻比商品價值高昂得多。</span></div>
+                <div class="mb-3"><b>● 分論二：</b>今人過度包裝製造垃圾，最後演變成全球性問題。<br><span class="pl-4 text-stone-600 text-xs italic block mt-1">作者以“買櫝還珠”的成語典故，諷刺現代人比古代人愚蠢，因爲現代人會爲自己製造垃圾<br>論據：古代人生活簡樸，沒有多少垃圾；現代人製造過多垃圾，每一個國家都為處理垃圾大傷腦筋。</span></div>
+                <div class="mb-3"><b>● 分論三：</b>指出自然資源並非「不竭」與「無盡藏」的，若人類繼續浪費，自然資源終有一天會耗盡。<br><span class="pl-4 text-stone-600 text-xs italic block mt-1">論據：作者以蘇東坡的名言，表示古人認爲資源是用之不竭的，以突出造物是有盡藏的，用之有竭的<br>作者引用世説新語，諷刺把部分人未能感覺地球資源正逐漸消耗的危機</span></div>
+                <p class="font-black text-amber-700 mt-4 text-center text-base">結論：聰明的中國人應該懸崖勒馬、改弦更張，給子孫多留一點資源。</p>
+            `;
         }
 
         function showFeedback(m, c) { const el = document.getElementById('feedback-area'); el.innerText = m; el.className = "text-center h-8 text-sm font-bold mt-1 " + c; }
