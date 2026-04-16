@@ -199,9 +199,9 @@
                     },
                     { 
                         q: "6. 作者引用成語買櫝還珠想帶出甚麽以包裝引申的問題？", 
-                        keywords: ["垃圾"], 
-                        label: "引申問題",
-                        tolerance: 20
+                        keywords: ["垃圾"],
+                        strictMatch: ["垃圾", "變成垃圾"],
+                        label: "引申問題"
                     },
                     { 
                         q: "7. 找出：古代生活中出現垃圾的情況", 
@@ -364,13 +364,55 @@
             const hintBox = document.getElementById('hint-container');
             const tolerance = target.tolerance !== undefined ? target.tolerance : 5;
             
-            const isCorrect = target.keywords.some(k => {
-                const ck = clean(k), cs = clean(sel);
-                return (cs.includes(ck) || ck.includes(cs)) && Math.abs(cs.length - ck.length) <= tolerance;
-            });
+            let isCorrect = false;
+            let errorMsg = "✗ 不夠精準，漏了關鍵詞哦";
+            const cs = clean(sel);
+
+            if (target.strictMatch) {
+                const cleanStrict = target.strictMatch.map(clean);
+                if (cleanStrict.includes(cs)) {
+                    isCorrect = true;
+                } else if (cleanStrict.some(k => cs.includes(k))) {
+                    errorMsg = "✗ 不夠精準，要收窄範圍哦";
+                } else if (cleanStrict.some(k => k.includes(cs))) {
+                    errorMsg = "✗ 不夠精準，漏了關鍵詞哦";
+                } else {
+                    errorMsg = "✗ 文字未包含答案哦，請在其他地方再找找";
+                }
+            } else {
+                let isCompletelyOff = true;
+                let isTooLong = false;
+                let isTooShort = false;
+
+                for (let k of target.keywords) {
+                    const ck = clean(k);
+                    if (cs.includes(ck)) {
+                        isCompletelyOff = false;
+                        if (cs.length - ck.length <= tolerance) {
+                            isCorrect = true;
+                            break;
+                        } else {
+                            isTooLong = true;
+                        }
+                    } else if (ck.includes(cs)) {
+                        isCompletelyOff = false;
+                        if (ck.length - cs.length <= tolerance) {
+                            isCorrect = true;
+                            break;
+                        } else {
+                            isTooShort = true;
+                        }
+                    }
+                }
+
+                if (!isCorrect) {
+                    if (isCompletelyOff) errorMsg = "✗ 文字未包含答案哦，請在其他地方再找找";
+                    else if (isTooLong) errorMsg = "✗ 不夠精準，要收窄範圍哦";
+                    else if (isTooShort) errorMsg = "✗ 不夠精準，漏了關鍵詞哦";
+                }
+            }
 
             if (isCorrect) {
-                // 處理特殊的隱藏/反灰邏輯
                 if (target.fadePAfterCollect) {
                     target.fadePAfterCollect.forEach(idx => {
                         const p = document.getElementById(`p-${idx}`);
@@ -386,8 +428,10 @@
                         let found = false;
                         let textSoFar = "";
                         const targetStr = clean(config.untilStr);
+                        const punctuationMarks = ['，','。','：','「','」','『','』','!','！','?','？'];
+                        
                         chars.forEach(c => {
-                            if (found) return;
+                            if (found && !punctuationMarks.includes(c.innerText)) return;
                             textSoFar += c.innerText;
                             c.classList.add('faded');
                             if (clean(textSoFar).includes(targetStr)) {
@@ -409,8 +453,8 @@
                 updateTaskUI();
             } else {
                 totalFail++; document.getElementById('fail-counter').innerText = totalFail;
-                showFeedback("✗ 不夠精準", "text-red-500");
-                if (target.hint) {
+                showFeedback(errorMsg, "text-red-500");
+                if (target.hint && !target.strictMatch) {
                     hintBox.innerHTML = `💡 <b>提示：</b>${target.hint}`;
                     hintBox.classList.remove('hidden');
                 }
@@ -418,8 +462,10 @@
         }
 
         function updateTaskUI() {
-            // 清除之前的回饋訊息（保證在新題目互動時畫面乾淨）
-            document.getElementById('feedback-area').innerText = '';
+            // 清空回饋訊息
+            const fbArea = document.getElementById('feedback-area');
+            clearTimeout(fbArea.timeoutId);
+            fbArea.innerText = '';
 
             const flow = gameFlow[currentIdx];
             document.getElementById('progress-val').innerText = `${currentIdx + 1} / 4`;
@@ -445,7 +491,6 @@
                     const target = flow.evidences[collectedIdx];
                     document.getElementById('task-stage').innerText = `搜集證據 (${collectedIdx}/${flow.evidences.length})`;
                     
-                    // 加上明確的提示句教導用戶操作
                     document.getElementById('task-desc').innerHTML = `
                         <div class="text-xs text-amber-600 mb-1 flex items-center gap-1">
                             <span class="animate-pulse">💡</span> 請在左側選取對應原文，然後點擊「驗證」
@@ -536,25 +581,22 @@
                 return; 
             }
             
-            // --- 背景傳送數據到 Google Apps Script ---
+            // --- 背景傳送數據到 Google Apps Script (使用 GET 方法對應您的 doGet) ---
             const scriptURL = "https://script.google.com/macros/s/AKfycbwCZc8JvRxTjx6O7jKrIn6IssYxmxMT1EYYCl6DClMtqezbwxhu4IeUMWahuhxWzE2w2A/exec";
             const datetimeStr = new Date().toLocaleString('zh-TW');
             
-            const payload = {
+            const queryParams = new URLSearchParams({
                 class: uClass,
-                num: uNum,
                 name: uName,
-                errors: totalFail,
+                fails: totalFail,
                 time: datetimeStr
-            };
+            }).toString();
 
-            fetch(scriptURL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
+            const finalUrl = scriptURL + (scriptURL.includes('?') ? '&' : '?') + queryParams;
+
+            fetch(finalUrl, {
+                method: 'GET',
+                mode: 'no-cors'
             }).catch(error => console.error('Data upload failed:', error));
             // ----------------------------------------
             
