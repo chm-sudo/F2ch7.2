@@ -607,6 +607,8 @@
             if (!uClass || !uNum || !uName) { 
                 alert("請完整填寫班別、班號與姓名！"); 
                 return; 
+            }
+            
             // --- 背景傳送數據到 Google Apps Script (使用 GET 方法對應您的 doGet) ---
             const scriptURL = "https://script.google.com/macros/s/AKfycbwCZc8JvRxTjx6O7jKrIn6IssYxmxMT1EYYCl6DClMtqezbwxhu4IeUMWahuhxWzE2w2A/exec";
             const datetimeStr = new Date().toLocaleString('zh-TW');
@@ -641,7 +643,7 @@
             document.getElementById('final-summary').innerHTML = `
                 <div class="text-center mb-6">
                     <span class="inline-block bg-amber-100 text-amber-900 px-4 py-2 rounded-full font-bold shadow-sm">
-                        ⏱️ 所用時間：${finalTimeStr} &nbsp;|&nbsp; ❌ 錯誤次數：${totalFail}
+                        ⏱️ 所用時間：${durationStr} &nbsp;|&nbsp; ❌ 錯誤次數：${totalFail}
                     </span>
                 </div>
                 <p class="font-black text-center text-amber-800 border-b pb-2 mb-3 text-lg">📝 《再論包裝》結構總結</p>
