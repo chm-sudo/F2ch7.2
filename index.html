@@ -440,6 +440,20 @@
             }
 
             if (isCorrect) {
+                // 將選取的證據文字標註為紫色
+                try {
+                    const selection = window.getSelection();
+                    if (selection.rangeCount > 0) {
+                        const range = selection.getRangeAt(0);
+                        const span = document.createElement('span');
+                        span.className = 'bg-purple-200 text-purple-900 rounded font-bold px-1';
+                        span.appendChild(range.extractContents());
+                        range.insertNode(span);
+                    }
+                } catch (e) {
+                    console.error('Highlight failed:', e);
+                }
+
                 if (target.fadePAfterCollect) {
                     target.fadePAfterCollect.forEach(idx => {
                         const p = document.getElementById(`p-${idx}`);
@@ -459,9 +473,16 @@
                         if (idx !== -1) {
                             const splitIndex = idx + targetStr.length;
                             const tagHtml = `<span class="text-stone-300 font-black text-[10px] mr-2 select-none bg-stone-100 px-1 rounded border">第 ${config.pIndex+1} 段</span>`;
-                            const part1 = originalText.substring(0, splitIndex);
-                            const part2 = originalText.substring(splitIndex);
+                            let part1 = originalText.substring(0, splitIndex);
+                            let part2 = originalText.substring(splitIndex);
                             
+                            // 保留目前的紫色標記
+                            if (part1.includes(sel)) {
+                                part1 = part1.replace(sel, `<span class="bg-purple-200 text-purple-900 rounded font-bold px-1">${sel}</span>`);
+                            } else if (part2.includes(sel)) {
+                                part2 = part2.replace(sel, `<span class="bg-purple-200 text-purple-900 rounded font-bold px-1">${sel}</span>`);
+                            }
+
                             // 將前半部包裝進 faded 的 span 中
                             p.innerHTML = `${tagHtml}<span class="faded" style="pointer-events: none;">${part1}</span>${part2}`;
                         }
