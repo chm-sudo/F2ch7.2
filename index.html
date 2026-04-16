@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>邏輯獵手 Ver2：再論包裝</title>
+    <title>論點獵手——《再談包裝》</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Noto+Sans+TC:wght@400;700&display=swap');
@@ -65,7 +65,7 @@
     <div id="mc-popover"></div>
     <div class="game-container">
         <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow border-b-4 border-amber-600">
-            <h1 class="font-black text-amber-900 text-lg">邏輯獵手 Ver2</h1>
+            <h1 class="font-black text-amber-900 text-lg">論點獵手——《再談包裝》</h1>
             <div class="flex gap-4 font-bold text-sm">
                 <span>錯誤：<span id="fail-counter" class="text-red-600">0</span></span>
                 <span>進度：<span id="progress-val">1 / 4</span></span>
@@ -88,9 +88,7 @@
                         
                         <div id="task-info">
                             <span id="task-stage" class="bg-amber-100 text-amber-800 px-2 py-1 rounded text-xs font-bold w-fit">任務載入中...</span>
-                            <p id="task-desc" class="font-black text-stone-900 mt-2 text-base"></p>
-                            <!-- 求助按鈕區 -->
-                            <div id="help-btn-container" class="hidden"></div>
+                            <div id="task-desc" class="font-black text-stone-900 mt-2 text-base"></div>
                         </div>
                         
                         <div id="interactive-area" class="flex-1 overflow-y-auto border-t pt-2 mt-2">
@@ -161,9 +159,23 @@
                 },
                 paragraphTask: { q: "1. 找出第一個論據出現的段落", a: [2, 3], hint: "周村燒餅" },
                 evidences: [
-                    { q: "2. 找出：周村燒餅原本的包裝方法", keywords: ["過去只是十個或八九個一摞，用白紙一包"], label: "舊有包裝" },
-                    { q: "3. 找出：現今周村燒餅的包裝", keywords: ["鐵盒，彩繪燙金，光彩奪目"], label: "新裝" },
-                    { q: "4. 找出：商品價值與包裝成本的對比", keywords: ["後者比前者要貴得多"], label: "價值倒置" }
+                    { 
+                        q: "2. 找出：周村燒餅原本的包裝方法", 
+                        keywords: ["過去只是十個或八九個一摞，用白紙一包"], 
+                        label: "舊有包裝",
+                        fadePAfterCollect: [2]
+                    },
+                    { 
+                        q: "3. 找出：現今周村燒餅的包裝", 
+                        keywords: ["鐵盒，彩繪燙金，光彩奪目"], 
+                        label: "新裝",
+                        fadePAfterCollect: [3]
+                    },
+                    { 
+                        q: "4. 找出：商品價值與包裝成本的對比", 
+                        keywords: ["後者比前者要貴得多"], 
+                        label: "價值倒置" 
+                    }
                 ],
                 cloze: "分論一：現代商品{過度包裝}，其成本{遠高於}商品實際價值，造成{浪費}。",
                 mcOptions: { 
@@ -179,16 +191,28 @@
                     'evidence_collect': { visibleP: [0,1,2,3,4,5,6,7], fadedP: [2,3,4] }
                 },
                 evidences: [
-                    { q: "5. 找出第二個論據", keywords: ["買櫝還珠"], label: "典故引用", hint: "這是一個引用" },
                     { 
-                        q: "6. 讓學生選取作者引用買櫝還珠想說明什麼觀點？", 
-                        keywords: [], 
-                        label: "引用觀點",
-                        customLogic: "allusion_point",
-                        helpText: "櫝代表什麽？買櫝還珠是發生在什麽時候？文章的重點是說何時的包裝問題？答案很長的哦~大膽選擇就可以"
+                        q: "5. 找出第二個論據", 
+                        keywords: ["典故：買櫝還珠", "買櫝還珠"], 
+                        label: "典故引用", 
+                        hint: "這是一個引用" 
                     },
-                    { q: "7. 找出：古代的垃圾情況", keywords: ["沒有多少垃圾，也決不會自己製造垃圾"], label: "古代情況" },
-                    { q: "8. 找出：現代處理垃圾的情況", keywords: ["每一個國家的政府都為處理垃圾而大傷腦筋"], label: "現代危機" }
+                    { 
+                        q: "6. 作者引用成語買櫝還珠想帶出甚麽以包裝引申的問題？", 
+                        keywords: ["垃圾"], 
+                        label: "引申問題",
+                        tolerance: 20
+                    },
+                    { 
+                        q: "7. 找出：古代生活中出現垃圾的情況", 
+                        keywords: ["沒有多少垃圾，也決不會自己製造垃圾"], 
+                        label: "古代情況" 
+                    },
+                    { 
+                        q: "8. 找出：現代生活中出現垃圾的情況", 
+                        keywords: ["會自己製造垃圾，以致垃圾成為一個世界性問題"], 
+                        label: "現代危機" 
+                    }
                 ],
                 cloze: "作者以「買櫝還珠」的{成語}典故，{諷刺}現代人比古代人{愚蠢}，因為現代人會{為自己製造垃圾}。",
                 mcOptions: { 
@@ -208,7 +232,12 @@
                     { q: "9. 找出第三個論據", keywords: ["惟江上之清風，與山間之明月，耳得之而為聲，目遇之而成色，取之無禁，用之不竭，是造物之無盡藏也"], label: "引用名言", hint: "引用" },
                     { q: "10. 找出文言解釋", keywords: ["東坡認為造物無盡藏"], label: "文言解釋", hint: "尋找對東坡話語的總結" },
                     { q: "11. 找出作者對此看法的評論", keywords: ["是不正確的"], label: "作者看法", hint: "作者覺得這個說法對嗎？" },
-                    { q: "12. 作者引用古人名言，藉此說明什麼觀點？", keywords: ["小小的一個地球村裏資源畢竟是有限的", "資源畢竟是有限的"], label: "資源觀點", hint: "尋找關於地球資源的描述" },
+                    { 
+                        q: "12. 作者引用古人名言，藉此說明什麼觀點？", 
+                        keywords: ["小小的一個地球村裏資源畢竟是有限的", "造物是有盡藏的，用之是有竭的"], 
+                        label: "資源觀點",
+                        fadePartialPAfterCollect: { pIndex: 6, untilStr: "用之是有竭的" }
+                    },
                     { q: "13. 找出第四個論據", keywords: ["盲人騎瞎馬，夜半臨深池"], label: "引用名言", hint: "引用" },
                     { q: "14. 作者引用書中的句子，藉此說明什麼觀點？", keywords: ["感覺到這種危險者不多"], label: "世人危機感", hint: "接著看" }
                 ],
@@ -226,8 +255,14 @@
                     'evidence_collect': { visibleP: [0,1,2,3,4,5,6,7], fadedP: [2,3,4,5,6] }
                 },
                 evidences: [
-                    { q: "15. 找出：作者對中國人的具體建議", keywords: ["再也不製造那一種大而無當的商品包裝", "再也不製造那一種大而無當的商品包裝和那種金碧輝煌的商品鐵盒"], label: "具體建議", hint: "最後一段，改弦更張之後的行動" },
-                    { q: "16. 找出：全文開篇的核心感受", keywords: ["值得擔憂"], label: "核心論點", hint: "第一段" }
+                    { 
+                        q: "15. 找出：作者對中國人的具體建議", 
+                        keywords: ["再也不製造那一種大而無當的商品包裝"], 
+                        label: "具體建議", 
+                        hint: "最後一段，改弦更張之後的行動",
+                        tolerance: 15
+                    },
+                    { q: "16. 找出：全文開篇中，作者對於現今包裝問題的感受", keywords: ["值得擔憂"], label: "核心論點", hint: "第一段" }
                 ],
                 cloze: "中心論點：過度包裝問題{值得擔憂}。我們應{不再製造大而無當的包裝}。",
                 mcOptions: { 
@@ -320,59 +355,48 @@
 
         function checkCurrentAction() {
             const sel = window.getSelection().toString().trim();
-            if (!sel || sel.length < 2) return showFeedback("⚠️ 請先在原文選取文字內容", "text-red-500");
+            if (!sel || sel.length < 2) { 
+                showFeedback("⚠️ 請先在原文選取文字內容", "text-red-500");
+                return; 
+            }
             
             const target = gameFlow[currentIdx].evidences[collectedIdx];
             const hintBox = document.getElementById('hint-container');
-            let isCorrect = false;
-
-            // --- 特殊邏輯：買櫝還珠觀點 ---
-            if (target.customLogic === 'allusion_point') {
-                const cs = clean(sel);
-                
-                if (cs.includes(clean("這個典故不過是譏笑捨本逐末，取捨不當而已"))) {
-                    hintBox.innerHTML = "💡 <b>提醒：</b>文章重點在包裝，不是取捨哦";
-                    hintBox.classList.remove('hidden');
-                    totalFail++; document.getElementById('fail-counter').innerText = totalFail;
-                    return;
-                } 
-                else if (!cs.includes(clean("那個櫝還是有用的")) || !cs.includes(clean("決不會變成垃圾"))) {
-                    hintBox.innerHTML = "💡 <b>提醒：</b>和 買櫝還珠有什麽關係";
-                    hintBox.classList.remove('hidden');
-                    totalFail++; document.getElementById('fail-counter').innerText = totalFail;
-                    return;
-                } 
-                else if (!cs.includes(clean("古代人生活簡樸")) || !cs.includes(clean("也決不會自己製造垃圾"))) {
-                    hintBox.innerHTML = "💡 <b>提醒：</b>爲甚麽要用古代的例子";
-                    hintBox.classList.remove('hidden');
-                    totalFail++; document.getElementById('fail-counter').innerText = totalFail;
-                    return;
-                }
-                else if (!cs.includes(clean("到了今天，人類大大地進步了。卻愈來愈蠢了，會自己製造垃圾"))) {
-                    hintBox.innerHTML = "💡 <b>提醒：</b>文章是想要討論古代的包裝問題嗎？";
-                    hintBox.classList.remove('hidden');
-                    totalFail++; document.getElementById('fail-counter').innerText = totalFail;
-                    return;
-                }
-                else if (!cs.includes(clean("以致垃圾成為一個世界性問題"))) {
-                    hintBox.innerHTML = "💡 <b>提醒：</b>請完整選取到這如何演變成世界性問題。";
-                    hintBox.classList.remove('hidden');
-                    totalFail++; document.getElementById('fail-counter').innerText = totalFail;
-                    return;
-                }
-                else {
-                    isCorrect = true;
-                }
-            } 
-            // --- 一般關鍵字比對邏輯 ---
-            else {
-                isCorrect = target.keywords.some(k => {
-                    const ck = clean(k), cs = clean(sel);
-                    return (cs.includes(ck) || ck.includes(cs)) && Math.abs(cs.length - ck.length) <= 5;
-                });
-            }
+            const tolerance = target.tolerance !== undefined ? target.tolerance : 5;
+            
+            const isCorrect = target.keywords.some(k => {
+                const ck = clean(k), cs = clean(sel);
+                return (cs.includes(ck) || ck.includes(cs)) && Math.abs(cs.length - ck.length) <= tolerance;
+            });
 
             if (isCorrect) {
+                // 處理特殊的隱藏/反灰邏輯
+                if (target.fadePAfterCollect) {
+                    target.fadePAfterCollect.forEach(idx => {
+                        const p = document.getElementById(`p-${idx}`);
+                        if (p) p.classList.add('faded');
+                    });
+                }
+
+                if (target.fadePartialPAfterCollect) {
+                    const config = target.fadePartialPAfterCollect;
+                    const p = document.getElementById(`p-${config.pIndex}`);
+                    if (p) {
+                        const chars = p.querySelectorAll('.char');
+                        let found = false;
+                        let textSoFar = "";
+                        const targetStr = clean(config.untilStr);
+                        chars.forEach(c => {
+                            if (found) return;
+                            textSoFar += c.innerText;
+                            c.classList.add('faded');
+                            if (clean(textSoFar).includes(targetStr)) {
+                                found = true;
+                            }
+                        });
+                    }
+                }
+
                 const d = document.createElement('div'); 
                 d.className = "bg-white p-1 mb-1 border-l-2 border-amber-600 pl-2 shadow-sm rounded text-stone-700";
                 d.innerHTML = `<b>【${target.label}】</b> ${sel.substring(0,20)}...`;
@@ -386,32 +410,28 @@
             } else {
                 totalFail++; document.getElementById('fail-counter').innerText = totalFail;
                 showFeedback("✗ 不夠精準", "text-red-500");
-                if (target.hint && !target.customLogic) {
+                if (target.hint) {
                     hintBox.innerHTML = `💡 <b>提示：</b>${target.hint}`;
                     hintBox.classList.remove('hidden');
                 }
             }
         }
 
-        window.showUltimateHint = function() {
-            const flow = gameFlow[currentIdx];
-            const target = flow.evidences[collectedIdx];
-            const hintBox = document.getElementById('hint-container');
-            hintBox.innerHTML = `💡 <b>終極提示：</b>${target.helpText}`;
-            hintBox.classList.remove('hidden');
-        };
-
         function updateTaskUI() {
+            // 清除之前的回饋訊息（保證在新題目互動時畫面乾淨）
+            document.getElementById('feedback-area').innerText = '';
+
             const flow = gameFlow[currentIdx];
             document.getElementById('progress-val').innerText = `${currentIdx + 1} / 4`;
             const btn = document.getElementById('main-action-btn');
-            const helpBtnContainer = document.getElementById('help-btn-container');
-            
-            helpBtnContainer.classList.add('hidden');
 
             if (currentPhase === 'paragraph_select') {
-                document.getElementById('task-stage').innerText = "段落定位";
-                document.getElementById('task-desc').innerText = flow.paragraphTask.q;
+                document.getElementById('task-desc').innerHTML = `
+                    <div class="text-xs text-amber-600 mb-1 flex items-center gap-1">
+                        <span class="animate-pulse">💡</span> 請在下方選擇段落，然後點擊「驗證」
+                    </div>
+                    ${flow.paragraphTask.q}
+                `;
                 document.getElementById('paragraph-select-area').classList.remove('hidden');
                 
                 btn.disabled = true; 
@@ -424,12 +444,14 @@
                 if (collectedIdx < flow.evidences.length) {
                     const target = flow.evidences[collectedIdx];
                     document.getElementById('task-stage').innerText = `搜集證據 (${collectedIdx}/${flow.evidences.length})`;
-                    document.getElementById('task-desc').innerText = target.q;
                     
-                    if (target.helpText) {
-                        helpBtnContainer.innerHTML = `<button onclick="showUltimateHint()" class="mt-2 text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-bold shadow-sm hover:bg-indigo-200 transition-colors">🆘 點此求助</button>`;
-                        helpBtnContainer.classList.remove('hidden');
-                    }
+                    // 加上明確的提示句教導用戶操作
+                    document.getElementById('task-desc').innerHTML = `
+                        <div class="text-xs text-amber-600 mb-1 flex items-center gap-1">
+                            <span class="animate-pulse">💡</span> 請在左側選取對應原文，然後點擊「驗證」
+                        </div>
+                        ${target.q}
+                    `;
 
                     btn.disabled = true; 
                     btn.className = "w-full py-3 mt-2 rounded-xl font-black bg-stone-300 text-stone-500 cursor-not-allowed";
@@ -505,10 +527,36 @@
         }
 
         function submitAndFinish() {
-            const uClass = document.getElementById('user-class').value;
-            const uNum = document.getElementById('user-num').value;
-            const uName = document.getElementById('user-name').value;
-            if (!uClass || !uNum || !uName) { alert("請完整填寫班別、班號與姓名！"); return; }
+            const uClass = document.getElementById('user-class').value.trim();
+            const uNum = document.getElementById('user-num').value.trim();
+            const uName = document.getElementById('user-name').value.trim();
+            
+            if (!uClass || !uNum || !uName) { 
+                alert("請完整填寫班別、班號與姓名！"); 
+                return; 
+            }
+            
+            // --- 背景傳送數據到 Google Apps Script ---
+            const scriptURL = "https://script.google.com/macros/s/AKfycbwCZc8JvRxTjx6O7jKrIn6IssYxmxMT1EYYCl6DClMtqezbwxhu4IeUMWahuhxWzE2w2A/exec";
+            const datetimeStr = new Date().toLocaleString('zh-TW');
+            
+            const payload = {
+                class: uClass,
+                num: uNum,
+                name: uName,
+                errors: totalFail,
+                time: datetimeStr
+            };
+
+            fetch(scriptURL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            }).catch(error => console.error('Data upload failed:', error));
+            // ----------------------------------------
             
             document.getElementById('display-class').innerText = uClass;
             document.getElementById('display-num').innerText = uNum;
@@ -517,7 +565,6 @@
             document.getElementById('name-modal').style.display = 'none';
             document.getElementById('finish-screen').style.display = 'flex';
             
-            // 嚴格寫入指定之總結文本
             document.getElementById('final-summary').innerHTML = `
                 <p class="font-black text-center text-amber-800 border-b pb-2 mb-3 text-lg">📝 《再論包裝》結構總結</p>
                 <div class="mb-3"><b>● 中心論點：</b>商品過度包裝的問題</div>
@@ -528,7 +575,17 @@
             `;
         }
 
-        function showFeedback(m, c) { const el = document.getElementById('feedback-area'); el.innerText = m; el.className = "text-center h-8 text-sm font-bold mt-1 " + c; }
+        // 修改：使用 setTimeout 設定計時，讓提示訊息自動消失
+        function showFeedback(m, c) { 
+            const el = document.getElementById('feedback-area'); 
+            el.innerText = m; 
+            el.className = "text-center h-8 text-sm font-bold mt-1 " + c; 
+            clearTimeout(el.timeoutId);
+            if (m !== "") {
+                el.timeoutId = setTimeout(() => { el.innerText = ""; }, 3000); 
+            }
+        }
+
         window.onclick = () => document.getElementById('mc-popover').style.display = 'none';
         window.onload = () => { initArticle(); };
     </script>
