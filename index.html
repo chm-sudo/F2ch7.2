@@ -162,7 +162,7 @@
                 evidences: [
                     { 
                         q: "2. 找出：周村燒餅原本的包裝方法", 
-                        keywords: ["過去只是十個或八九個一摞，用白紙一包"], 
+                        keywords: ["過去只是十個或八九個一摞，用白紙一包", "十個或八九個一摞，用白紙一包", "用白紙一包"], 
                         label: "舊有包裝",
                         fadePAfterCollect: [2]
                     },
@@ -199,7 +199,7 @@
                         hint: "這是一個引用" 
                     },
                     { 
-                        q: "6. 作者引用成語買櫝還珠想帶出哪個因包裝而引申的問題？", 
+                        q: "6. 作者引用成語”買櫝還珠”想帶出哪個因包裝而出現的問題？", 
                         keywords: ["垃圾", "變成垃圾", "會變成垃圾"],
                         label: "引申問題",
                         strictMatch: ["垃圾", "變成垃圾", "會變成垃圾"]
@@ -240,7 +240,7 @@
                     },
                     { 
                         q: "11. 找出作者對此看法的評論", 
-                        keywords: ["不正確"], // 修正：改為不正確
+                        keywords: ["不正確"], 
                         label: "作者看法", 
                         hint: "作者覺得這個說法對嗎？" 
                     },
@@ -248,7 +248,7 @@
                         q: "12. 作者引用古人名言，藉此說明什麼觀點？", 
                         keywords: ["小小的一個地球村裏資源畢竟是有限的", "造物是有盡藏的，用之是有竭的"], 
                         label: "資源觀點",
-                        fadePartialPAfterCollect: { pIndex: 6, untilStr: "用之是有竭的" }
+                        fadePartialPAfterCollect: { pIndex: 6, untilStr: "用之是有竭的。" }
                     },
                     { q: "13. 找出第四個論據", keywords: ["盲人騎瞎馬，夜半臨深池"], label: "引用名言", hint: "引用" },
                     { q: "14. 作者引用書中的句子，藉此說明什麼觀點？", keywords: ["感覺到這種危險者不多"], label: "世人危機感", hint: "接著看" }
@@ -451,20 +451,20 @@
                     const config = target.fadePartialPAfterCollect;
                     const p = document.getElementById(`p-${config.pIndex}`);
                     if (p) {
-                        const chars = p.querySelectorAll('.char');
-                        let found = false;
-                        let textSoFar = "";
-                        const targetStr = clean(config.untilStr);
-                        const punctuationMarks = ['，','。','：','「','」','『','』','!','！','?','？'];
+                        // 安全的字串替換法：像剪刀一樣切開文字，絕對不破壞其他結構
+                        const originalText = articleText[config.pIndex];
+                        const targetStr = config.untilStr;
+                        const idx = originalText.indexOf(targetStr);
                         
-                        chars.forEach(c => {
-                            if (found && !punctuationMarks.includes(c.innerText)) return;
-                            textSoFar += c.innerText;
-                            c.classList.add('faded');
-                            if (clean(textSoFar).includes(targetStr)) {
-                                found = true;
-                            }
-                        });
+                        if (idx !== -1) {
+                            const splitIndex = idx + targetStr.length;
+                            const tagHtml = `<span class="text-stone-300 font-black text-[10px] mr-2 select-none bg-stone-100 px-1 rounded border">第 ${config.pIndex+1} 段</span>`;
+                            const part1 = originalText.substring(0, splitIndex);
+                            const part2 = originalText.substring(splitIndex);
+                            
+                            // 將前半部包裝進 faded 的 span 中
+                            p.innerHTML = `${tagHtml}<span class="faded" style="pointer-events: none;">${part1}</span>${part2}`;
+                        }
                     }
                 }
 
