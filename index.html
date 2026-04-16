@@ -199,9 +199,9 @@
                     },
                     { 
                         q: "6. 作者引用成語買櫝還珠想帶出甚麽以包裝引申的問題？", 
-                        keywords: ["垃圾"],
-                        strictMatch: ["垃圾", "變成垃圾"],
-                        label: "引申問題"
+                        keywords: ["垃圾", "變成垃圾"],
+                        label: "引申問題",
+                        tolerance: 0 // 嚴格限制，多餘字元將會被擋下
                     },
                     { 
                         q: "7. 找出：古代生活中出現垃圾的情況", 
@@ -230,12 +230,19 @@
                 },
                 evidences: [
                     { q: "9. 找出第三個論據", keywords: ["惟江上之清風，與山間之明月，耳得之而為聲，目遇之而成色，取之無禁，用之不竭，是造物之無盡藏也"], label: "引用名言", hint: "引用" },
-                    { q: "10. 找出文言解釋", keywords: ["東坡認為造物無盡藏"], label: "文言解釋", hint: "尋找對東坡話語的總結" },
+                    { 
+                        q: "10. 找出文言解釋", 
+                        keywords: ["東坡認為造物無盡藏"], 
+                        label: "文言解釋", 
+                        hint: "尋找對東坡話語的總結",
+                        tolerance: 0 // 嚴格限制，不允許包含「是不正確的」
+                    },
                     { q: "11. 找出作者對此看法的評論", keywords: ["是不正確的"], label: "作者看法", hint: "作者覺得這個說法對嗎？" },
                     { 
                         q: "12. 作者引用古人名言，藉此說明什麼觀點？", 
                         keywords: ["小小的一個地球村裏資源畢竟是有限的", "造物是有盡藏的，用之是有竭的"], 
                         label: "資源觀點",
+                        // 完成此題後，將第 7 段從開頭反灰直到「用之是有竭的」
                         fadePartialPAfterCollect: { pIndex: 6, untilStr: "用之是有竭的" }
                     },
                     { q: "13. 找出第四個論據", keywords: ["盲人騎瞎馬，夜半臨深池"], label: "引用名言", hint: "引用" },
@@ -257,7 +264,7 @@
                 evidences: [
                     { 
                         q: "15. 找出：作者對中國人的具體建議", 
-                        keywords: ["再也不製造那一種大而無當的商品包裝"], 
+                        keywords: ["再也不製造那一種大而無當的商品包裝", "再也不製造那一種大而無當的商品包裝和那種金碧輝煌的商品鐵盒", "懸崖勒馬，改弦更張，再也不製造那一種大而無當的商品包裝"], 
                         label: "具體建議", 
                         hint: "最後一段，改弦更張之後的行動",
                         tolerance: 15
@@ -365,51 +372,33 @@
             const tolerance = target.tolerance !== undefined ? target.tolerance : 5;
             
             let isCorrect = false;
-            let errorMsg = "✗ 不夠精準，漏了關鍵詞哦";
+            let errorMsg = "✗ 文字未包含答案哦，請在其他地方再找找";
             const cs = clean(sel);
 
-            if (target.strictMatch) {
-                const cleanStrict = target.strictMatch.map(clean);
-                if (cleanStrict.includes(cs)) {
-                    isCorrect = true;
-                } else if (cleanStrict.some(k => cs.includes(k))) {
-                    errorMsg = "✗ 不夠精準，要收窄範圍哦";
-                } else if (cleanStrict.some(k => k.includes(cs))) {
-                    errorMsg = "✗ 不夠精準，漏了關鍵詞哦";
-                } else {
-                    errorMsg = "✗ 文字未包含答案哦，請在其他地方再找找";
-                }
-            } else {
-                let isCompletelyOff = true;
-                let isTooLong = false;
-                let isTooShort = false;
+            let isCompletelyOff = true;
+            let isTooLong = false;
+            let isTooShort = false;
 
-                for (let k of target.keywords) {
-                    const ck = clean(k);
-                    if (cs.includes(ck)) {
-                        isCompletelyOff = false;
-                        if (cs.length - ck.length <= tolerance) {
-                            isCorrect = true;
-                            break;
-                        } else {
-                            isTooLong = true;
-                        }
-                    } else if (ck.includes(cs)) {
-                        isCompletelyOff = false;
-                        if (ck.length - cs.length <= tolerance) {
-                            isCorrect = true;
-                            break;
-                        } else {
-                            isTooShort = true;
-                        }
+            for (let k of target.keywords) {
+                const ck = clean(k);
+                if (cs.includes(ck)) {
+                    isCompletelyOff = false;
+                    if (cs.length - ck.length <= tolerance) {
+                        isCorrect = true;
+                        break;
+                    } else {
+                        isTooLong = true; // 包含答案但選了太多字
                     }
+                } else if (ck.includes(cs)) {
+                    isCompletelyOff = false;
+                    isTooShort = true; // 選取的是答案的一部份
                 }
+            }
 
-                if (!isCorrect) {
-                    if (isCompletelyOff) errorMsg = "✗ 文字未包含答案哦，請在其他地方再找找";
-                    else if (isTooLong) errorMsg = "✗ 不夠精準，要收窄範圍哦";
-                    else if (isTooShort) errorMsg = "✗ 不夠精準，漏了關鍵詞哦";
-                }
+            if (!isCorrect) {
+                if (isTooLong) errorMsg = "✗ 不夠精準，要收窄範圍哦";
+                else if (isTooShort) errorMsg = "✗ 不夠精準，漏了關鍵詞哦";
+                else errorMsg = "✗ 文字未包含答案哦，請在其他地方再找找";
             }
 
             if (isCorrect) {
@@ -454,7 +443,7 @@
             } else {
                 totalFail++; document.getElementById('fail-counter').innerText = totalFail;
                 showFeedback(errorMsg, "text-red-500");
-                if (target.hint && !target.strictMatch) {
+                if (target.hint) {
                     hintBox.innerHTML = `💡 <b>提示：</b>${target.hint}`;
                     hintBox.classList.remove('hidden');
                 }
@@ -587,6 +576,7 @@
             
             const queryParams = new URLSearchParams({
                 class: uClass,
+                num: uNum, // 已加入班號資料
                 name: uName,
                 fails: totalFail,
                 time: datetimeStr
@@ -617,7 +607,7 @@
             `;
         }
 
-        // 修改：使用 setTimeout 設定計時，讓提示訊息自動消失
+        // 提示訊息自動消失機制
         function showFeedback(m, c) { 
             const el = document.getElementById('feedback-area'); 
             el.innerText = m; 
